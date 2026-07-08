@@ -63,6 +63,59 @@ app.delete('/api/stations/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// ── UPnP Helpers ───────────────────────────────────────────────────────────
+
+function soapRequest(ip, action, body, cb) {
+  const xml = `<?xml version="1.0" encoding="utf-8"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>${body}</s:Body></s:Envelope>`;
+  const opts = {
+    hostname: ip, port: 8091,
+    path: '/AVTransport/Control',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'text/xml; charset="utf-8"',
+      'SOAPAction': `"urn:schemas-upnp-org:service:AVTransport:1#${action}"`,
+      'Content-Length': Buffer.byteLength(xml),
+    },
+  };
+  const req = http.request(opts, r => { r.resume(); cb(null, r.statusCode); });
+  req.on('error', cb);
+  req.setTimeout(5000, () => { req.destroy(); cb(new Error('timeout')); });
+  req.write(xml);
+  req.end();
+}
+
+// ── UPnP Play ──────────────────────────────────────────────────────────────
+
+app.post('/api/play', (req, res) => {
+  const { speakerIp, streamUrl } = req.body;
+  if (!speakerIp || !streamUrl) return res.status(400).json({ error: 'speakerIp and streamUrl required' });
+
+  const setUri = `<u:SetAVTransportURI xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><CurrentURI>${streamUrl}</CurrentURI><CurrentURIMetaData></CurrentURIMetaData></u:SetAVTransportURI>`;
+  const play   = `<u:Play xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID><Speed>1</Speed></u:Play>`;
+
+  soapRequest(speakerIp, 'SetAVTransportURI', setUri, (err) => {
+    if (err) return res.status(502).json({ error: `SetAVTransportURI failed: ${err.message}` });
+    soapRequest(speakerIp, 'Play', play, (err2, status) => {
+      if (err2) return res.status(502).json({ error: `Play failed: ${err2.message}` });
+      res.json({ ok: true, status });
+    });
+  });
+});
+
+// ── UPnP Stop ──────────────────────────────────────────────────────────────
+
+app.post('/api/stop', (req, res) => {
+  const { speakerIp } = req.body;
+  if (!speakerIp) return res.status(400).json({ error: 'speakerIp required' });
+
+  const stop = `<u:Stop xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>0</InstanceID></u:Stop>`;
+
+  soapRequest(speakerIp, 'Stop', stop, (err, status) => {
+    if (err) return res.status(502).json({ error: `Stop failed: ${err.message}` });
+    res.json({ ok: true, status });
+  });
+});
+
 // ── Audio Proxy ────────────────────────────────────────────────────────────
 
 // GET /stream/:id — serves the audio as HTTP for the Bose speaker

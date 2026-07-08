@@ -604,6 +604,105 @@
       .logo { padding: 0; border: none; margin: 0; }
       .main { padding: 20px 16px; }
     }
+
+    /* ── Player ── */
+    .now-playing-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 22px;
+      margin-bottom: 14px;
+      min-height: 72px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .now-playing-card.active {
+      border-color: rgba(0,194,255,0.35);
+      background: linear-gradient(135deg, rgba(0,194,255,0.05) 0%, var(--surface) 100%);
+    }
+
+    .np-active-row { display: flex; align-items: center; gap: 16px; }
+
+    .np-equalizer {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 36px;
+      flex-shrink: 0;
+    }
+
+    .np-bar {
+      width: 4px;
+      background: var(--app);
+      border-radius: 2px 2px 0 0;
+      animation: eqbar 0.8s ease infinite alternate;
+    }
+
+    .np-bar:nth-child(1) { animation-duration: 0.55s; }
+    .np-bar:nth-child(2) { animation-duration: 0.85s; animation-delay: .1s; }
+    .np-bar:nth-child(3) { animation-duration: 0.65s; animation-delay: .2s; }
+    .np-bar:nth-child(4) { animation-duration: 0.95s; animation-delay: .05s; }
+    .np-bar:nth-child(5) { animation-duration: 0.75s; animation-delay: .15s; }
+
+    @keyframes eqbar {
+      0%   { height: 5px;  opacity: 0.5; }
+      100% { height: 32px; opacity: 1; }
+    }
+
+    .btn-stop {
+      background: transparent;
+      border: 1px solid rgba(244,63,94,0.4);
+      color: #F43F5E;
+      padding: 8px 16px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+
+    .btn-stop:hover { background: rgba(244,63,94,0.1); }
+
+    .speaker-ip-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin-bottom: 14px;
+    }
+
+    .station-card.playing {
+      border-color: rgba(0,194,255,0.35);
+      background: rgba(0,194,255,0.04);
+    }
+
+    .station-card.playing .station-name { color: var(--app); }
+
+    .mini-eq {
+      display: inline-flex;
+      gap: 2px;
+      align-items: flex-end;
+      height: 13px;
+      margin-left: 7px;
+      vertical-align: middle;
+    }
+
+    .mini-eq span {
+      display: block;
+      width: 3px;
+      background: var(--app);
+      border-radius: 1px;
+      animation: eqbar 0.7s ease infinite alternate;
+    }
+
+    .mini-eq span:nth-child(1) { animation-duration: 0.5s; }
+    .mini-eq span:nth-child(2) { animation-duration: 0.8s; animation-delay: .1s; }
+    .mini-eq span:nth-child(3) { animation-duration: 0.6s; animation-delay: .2s; }
   </style>
 </head>
 <body>
@@ -629,6 +728,9 @@
     </a>
     <a class="nav-item" onclick="showSection('stations')">
       <span class="nav-icon">📻</span> Stations
+    </a>
+    <a class="nav-item" onclick="showSection('test')">
+      <span class="nav-icon">🎵</span> Player
     </a>
 
     <div class="sidebar-footer">
@@ -932,6 +1034,72 @@
       </div>
     </div>
 
+    <!-- PLAYER SECTION -->
+    <div class="section" id="section-test">
+      <div class="page-header">
+        <p class="page-eyebrow">Bose SoundTouch 10</p>
+        <h1 class="page-title">Player</h1>
+        <p class="page-sub">Command the speaker to stream a radio station over the local network</p>
+      </div>
+
+      <!-- Now Playing -->
+      <div class="now-playing-card" id="np-card">
+        <div id="np-idle-state" style="display:flex;align-items:center;gap:12px;">
+          <div style="font-size:26px;opacity:.3;">🔇</div>
+          <div style="color:var(--muted);font-size:14px;">Nothing playing</div>
+        </div>
+        <div id="np-active-state" class="np-active-row" style="display:none;">
+          <div class="np-equalizer">
+            <div class="np-bar"></div>
+            <div class="np-bar"></div>
+            <div class="np-bar"></div>
+            <div class="np-bar"></div>
+            <div class="np-bar"></div>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--app);margin-bottom:3px;">NOW PLAYING</div>
+            <div style="font-size:17px;font-weight:700;color:#E8F0FF;margin-bottom:3px;" id="np-name">—</div>
+            <div style="font-size:11px;font-family:monospace;color:var(--muted);word-break:break-all;" id="np-url">—</div>
+          </div>
+          <button class="btn-stop" onclick="stopPlayback()">■ Stop</button>
+        </div>
+      </div>
+
+      <!-- Speaker IP -->
+      <div class="speaker-ip-row">
+        <span style="font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;">🔊 Speaker IP</span>
+        <input type="text" id="inp-speaker-ip" value="192.168.1.10" style="width:160px;" />
+      </div>
+
+      <!-- Add Station -->
+      <div class="add-card">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin-bottom:12px;">ADD STATION</div>
+        <div class="form-row" style="margin-bottom:10px;">
+          <input type="text" id="inp-save-name" name="name" placeholder="Station name  (e.g. DZMM)" />
+          <input type="text" id="inp-stream-url" name="url" placeholder="Stream URL  (http://...)" style="flex:1 1 300px;min-width:200px;" />
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn" id="btn-play-direct" onclick="playDirectUrl()">▶ Play This</button>
+          <button class="btn" onclick="saveAndPlay()" style="background:var(--source);">▶ Add &amp; Play</button>
+          <button class="btn" onclick="savePlaylistItem()" style="background:var(--server);">+ Add to List</button>
+        </div>
+      </div>
+
+      <!-- My Stations -->
+      <div>
+        <div class="stations-header">
+          <span class="stations-title">My Stations</span>
+          <span class="count-tag" id="playlist-count">0</span>
+        </div>
+        <div class="station-list" id="playlist-list">
+          <div class="empty-state">
+            <div class="empty-icon">🎵</div>
+            No stations yet. Add one above.
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -1040,6 +1208,148 @@
   document.getElementById('inp-url').addEventListener('keydown', e => { if (e.key === 'Enter') addStation(); });
 
   fetchStations();
+
+  // ── Player ────────────────────────────────────────────────────────────────
+  let playlist = JSON.parse(localStorage.getItem('playlist') || '[]');
+  let nowPlayingIndex = -1;
+
+  function renderPlaylist() {
+    const list = document.getElementById('playlist-list');
+    document.getElementById('playlist-count').textContent = playlist.length;
+    if (!playlist.length) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">🎵</div>No stations yet. Add one above.</div>';
+      return;
+    }
+    list.innerHTML = playlist.map((item, i) => {
+      const isPlaying = i === nowPlayingIndex;
+      return `
+      <div class="station-card${isPlaying ? ' playing' : ''}">
+        <div class="station-top">
+          <span class="station-name">
+            ${esc(item.name)}
+            ${isPlaying ? '<span class="mini-eq"><span></span><span></span><span></span></span>' : ''}
+          </span>
+          <div class="station-actions">
+            <button class="btn" onclick="playPlaylistItem(${i})" style="padding:5px 14px;font-size:12px;">${isPlaying ? '↺ Restart' : '▶ Play'}</button>
+            <button class="btn-danger" onclick="removePlaylistItem(${i})">Remove</button>
+          </div>
+        </div>
+        <div class="station-source">${esc(item.url)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function setNowPlayingUI(name, url) {
+    document.getElementById('np-card').classList.add('active');
+    document.getElementById('np-idle-state').style.display = 'none';
+    document.getElementById('np-active-state').style.display = 'flex';
+    document.getElementById('np-name').textContent = name;
+    document.getElementById('np-url').textContent = url;
+  }
+
+  function clearNowPlayingUI() {
+    document.getElementById('np-card').classList.remove('active');
+    document.getElementById('np-idle-state').style.display = 'flex';
+    document.getElementById('np-active-state').style.display = 'none';
+    nowPlayingIndex = -1;
+    renderPlaylist();
+  }
+
+  async function sendPlayCommand(rawUrl, displayName, playlistIdx) {
+    const speakerIp = document.getElementById('inp-speaker-ip').value.trim();
+    if (!speakerIp || !rawUrl) { showToast('Enter speaker IP and URL'); return false; }
+
+    // Route through our local proxy so the speaker always gets plain HTTP.
+    // window.location.host = "192.168.x.x:3000" — reachable by speaker on same LAN.
+    const streamUrl = `http://${window.location.host}/proxy?url=${encodeURIComponent(rawUrl)}`;
+
+    try {
+      const res = await fetch('/api/play', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ speakerIp, streamUrl }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        nowPlayingIndex = (playlistIdx !== undefined) ? playlistIdx : -1;
+        setNowPlayingUI(displayName || rawUrl, rawUrl);
+        renderPlaylist();
+        showToast('Playing on speaker!');
+        return true;
+      } else {
+        showToast('Failed: ' + data.error);
+        return false;
+      }
+    } catch (err) {
+      showToast('Error: ' + err.message);
+      return false;
+    }
+  }
+
+  async function playDirectUrl() {
+    const url  = document.getElementById('inp-stream-url').value.trim();
+    const name = document.getElementById('inp-save-name').value.trim() || url;
+    if (!url) { showToast('Enter a stream URL'); return; }
+    const btn = document.getElementById('btn-play-direct');
+    btn.disabled = true; btn.textContent = 'Sending...';
+    await sendPlayCommand(url, name);
+    btn.disabled = false; btn.textContent = '▶ Play This';
+  }
+
+  async function playPlaylistItem(i) {
+    await sendPlayCommand(playlist[i].url, playlist[i].name, i);
+  }
+
+  function savePlaylistItem() {
+    const url  = document.getElementById('inp-stream-url').value.trim();
+    const name = document.getElementById('inp-save-name').value.trim() || url;
+    if (!url) { showToast('Enter a stream URL first'); return; }
+    playlist.push({ name, url });
+    localStorage.setItem('playlist', JSON.stringify(playlist));
+    document.getElementById('inp-save-name').value = '';
+    document.getElementById('inp-stream-url').value = '';
+    renderPlaylist();
+    showToast('Added to list');
+  }
+
+  async function saveAndPlay() {
+    const url  = document.getElementById('inp-stream-url').value.trim();
+    const name = document.getElementById('inp-save-name').value.trim() || url;
+    if (!url) { showToast('Enter a stream URL first'); return; }
+    playlist.push({ name, url });
+    localStorage.setItem('playlist', JSON.stringify(playlist));
+    document.getElementById('inp-save-name').value = '';
+    document.getElementById('inp-stream-url').value = '';
+    const idx = playlist.length - 1;
+    renderPlaylist();
+    await sendPlayCommand(url, name, idx);
+  }
+
+  function removePlaylistItem(i) {
+    if (i === nowPlayingIndex) clearNowPlayingUI();
+    else if (i < nowPlayingIndex) nowPlayingIndex--;
+    playlist.splice(i, 1);
+    localStorage.setItem('playlist', JSON.stringify(playlist));
+    renderPlaylist();
+    showToast('Removed');
+  }
+
+  async function stopPlayback() {
+    const speakerIp = document.getElementById('inp-speaker-ip').value.trim();
+    if (speakerIp) {
+      try {
+        await fetch('/api/stop', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ speakerIp }),
+        });
+      } catch {}
+    }
+    clearNowPlayingUI();
+    showToast('Stopped');
+  }
+
+  renderPlaylist();
 
   // ── Tabs ──────────────────────────────────────────────────────────────────
   function showTab(name) {
